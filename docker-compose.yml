@@ -1,0 +1,41 @@
+version: '2'
+
+services:
+  php:
+    container_name: php
+    image: yiisoftware/yii2-php:7.4-apache
+    volumes:
+      - ~/.composer-docker/cache:/root/.composer/cache:delegated
+      - ./:/app:delegated
+    ports:
+      - '8000:80'
+    networks:
+      - main
+  mysql:
+    container_name: mysql
+    image: mysql:8.0.22
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: medialine
+    networks:
+      - main
+    ports:
+      - '3307:3306'
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - '8001:80'
+    networks:
+      - main
+
+networks:
+  main:
+    driver: bridge
