@@ -4,8 +4,6 @@
 
 Миграции на месте
 
-Базу данных можно заполнить с помощью hello/seed-database
-
 Экшены: 
 * ```category/list?offset={offset}```
 * ```news/list/{category_id}?offset={offset}```
