@@ -68,7 +68,10 @@ class SiteController extends Controller
 
     public function actionNewsList($categoryId)
     {
-        $sql = <<<SQL
+        $offset = (int)Yii::$app->request->getQueryParam('offset', 0);
+        $params = [':id' => (int)$categoryId];
+
+        $sqlWith = <<<SQL
 WITH RECURSIVE `cte` AS (
     SELECT id
     FROM `categories`
@@ -78,18 +81,25 @@ WITH RECURSIVE `cte` AS (
     FROM `cte` AS c1
              JOIN `categories` AS c2 ON c1.id = c2.parent_id
 )
-SELECT * FROM news WHERE category_id IN (SELECT * FROM cte)
 SQL;
-        $query = News::findBySql($sql, [':id' => $categoryId]);
-        $query->limit(10);
-        $items = $query->all();
+        $sqlItems = <<<SQL
+SELECT * FROM news WHERE category_id IN (SELECT * FROM cte) LIMIT 10 OFFSET $offset
+SQL;
+        $sqlCount = <<<SQL
+SELECT COUNT(*) FROM news WHERE category_id IN (SELECT * FROM cte)
+SQL;
 
-        return $this->asJson($items);
+        $count = Yii::$app->db->createCommand($sqlWith . $sqlCount, $params)->queryScalar();
+        $items = News::findBySql($sqlWith . $sqlItems, $params)->all();
+
+        return $this->asJson(['items' => $items, 'count' => $count]);
     }
 
     public function actionCategoryList()
     {
-        $sql = <<<SQL
+        $offset = (int)Yii::$app->request->getQueryParam('offset', 0);
+
+        $sqlWith = <<<SQL
 WITH RECURSIVE `cte` AS (
     SELECT *
     FROM `categories`
@@ -99,15 +109,22 @@ WITH RECURSIVE `cte` AS (
     FROM `cte` AS c1
              JOIN `categories` AS c2 ON c1.id = c2.parent_id
 )
-SELECT *
-FROM cte
+SQL;
+        $sqlItems = <<<SQL
+SELECT * FROM cte LIMIT 10 OFFSET $offset
+SQL;
+        $sqlCount = <<<SQL
+SELECT COUNT(*) FROM cte
 SQL;
 
-        $query = Category::findBySql($sql);
-        $query->limit(100);
+        $sql = <<<SQL
 
-        $items = $query->all();
 
-        return $this->asJson($items);
+SQL;
+
+        $count = Yii::$app->db->createCommand($sqlWith . $sqlCount)->queryScalar();
+        $items = Category::findBySql($sqlWith . $sqlItems)->all();
+
+        return $this->asJson(['items' => $items, 'count' => $count]);
     }
 }
